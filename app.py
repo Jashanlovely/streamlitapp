@@ -77,7 +77,7 @@ def predict_failure(processed_data):
 st.set_page_config(page_title="Predictive Maintenance System", layout="wide")  # Set page configuration
 
 # Sidebar for navigation and input
-st.sidebar.title("Control Panel")
+st.sidebar.title("Predictive Maintenance System")
 
 # File uploader in sidebar
 uploaded_file = st.sidebar.file_uploader("Upload CSV", type="csv")
