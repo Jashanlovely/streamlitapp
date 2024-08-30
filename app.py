@@ -11,11 +11,10 @@ import plotly.express as px  # New: For interactive charts
 import time  # New: For feedback animations
 
 # Load the model
-model_path = 'C:\\Users\\hp\\OneDrive\\Desktop\\ml_webapp\\streamlitapp\\ml-webapp'
-model_file = os.path.join(model_path, 'best_random_forest_model.pkl')
-if os.path.exists(model_file):
-    with open(model_file, 'rb') as file:
-        model = joblib.load(file)
+model_path = 'best_random_forest_model.pkl'
+
+with open(model_path, 'rb') as model_file:
+    model = pickle.load(model_file)
 else:
     st.error(f"Model file not found at {model_file}")
     model = None
