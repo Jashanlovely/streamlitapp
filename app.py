@@ -6,7 +6,7 @@ import joblib
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.impute import SimpleImputer
+from sklearn.impute import SimpleImputer                            
 import plotly.express as px  # New: For interactive charts
 import time  # New: For feedback animations
 
@@ -75,8 +75,8 @@ def predict_failure(processed_data):
         st.error("Model not loaded.")
         return None
 
-# Streamlit app
-st.set_page_config(page_title="Predictive Maintenance System", layout="wide")  # New: Set page configuration
+# Streamlit app with updated slider usage
+st.set_page_config(page_title="Predictive Maintenance System", layout="wide")  # Set page configuration
 
 # Sidebar for navigation and input
 st.sidebar.title("Control Panel")
@@ -84,7 +84,7 @@ st.sidebar.title("Control Panel")
 # File uploader in sidebar
 uploaded_file = st.sidebar.file_uploader("Upload CSV", type="csv")
 
-# User input sliders in sidebar (optional, can be disabled if you want to rely solely on uploaded files)
+# User input sliders in sidebar
 temperature_input = st.sidebar.slider("Select Temperature", min_value=-10.0, max_value=50.0, value=20.0)
 humidity_input = st.sidebar.slider("Select Humidity", min_value=0.0, max_value=100.0, value=50.0)
 
@@ -93,7 +93,11 @@ tab1, tab2, tab3 = st.tabs(["Data Insights", "Predictions", "Trends"])
 
 if uploaded_file is not None:
     sensor_df = pd.read_csv(uploaded_file)
-    
+
+    # Update temperature and humidity columns using slider inputs
+    sensor_df['temperature'] = temperature_input
+    sensor_df['humidity'] = humidity_input
+
     # Separating appliance-related columns and internal/external variables
     appliance_columns = [
         'Dishwasher [kW]', 'Furnace 1 [kW]', 'Furnace 2 [kW]', 'Home office [kW]', 
@@ -101,7 +105,7 @@ if uploaded_file is not None:
         'Kitchen 14 [kW]', 'Kitchen 38 [kW]', 'Barn [kW]', 'Well [kW]', 'Microwave [kW]', 
         'Living room [kW]', 'Solar [kW]'
     ]
-    
+
     variable_columns = [
         'temperature', 'humidity', 'precipIntensity', 'precipProbability', 'windSpeed', 
         'pressure', 'visibility', 'apparentTemperature', 'cloudCover', 'windBearing', 
@@ -122,7 +126,7 @@ if uploaded_file is not None:
         st.subheader("Internal/External Variables")
         variable_df = sensor_df[variable_columns].drop_duplicates()  # Remove duplicates
         st.dataframe(variable_df.describe().transpose())
-    
+
     # Tab 2: Predictions
     with tab2:
         st.subheader("Failure Predictions")
@@ -132,7 +136,7 @@ if uploaded_file is not None:
 
             if processed_data is not None:
                 if st.sidebar.button("Predict Failure"):
-                    with st.spinner('Running prediction...'):  # New: Spinner during prediction
+                    with st.spinner('Running prediction...'):
                         failure_prediction = predict_failure(processed_data)
                         if failure_prediction is not None:
                             st.write(f"Failure Prediction: {failure_prediction}")
@@ -140,8 +144,8 @@ if uploaded_file is not None:
                                 st.write("Recommendation: Please schedule maintenance as soon as possible.")
                             else:
                                 st.write("No immediate maintenance is required.")
-                    st.success('Prediction complete!')  # New: Success message after prediction
-                    
+                    st.success('Prediction complete!')
+                
                 # Outlier detection
                 st.subheader("Outlier Detection")
                 outliers = detect_outliers(sensor_df[training_columns])
@@ -152,16 +156,15 @@ if uploaded_file is not None:
                     st.write("No outliers detected.")
         else:
             st.error("Uploaded file does not contain all the required columns.")
-    
+
     # Tab 3: Trends and Insights
     with tab3:
         st.subheader("Sensor Data Trends")
-        fig = px.line(sensor_df, x=sensor_df.index, y='temperature', title='Temperature Over Time')  # New: Interactive chart using Plotly
+        fig = px.line(sensor_df, x=sensor_df.index, y='temperature', title='Temperature Over Time')  
         st.plotly_chart(fig)
 
         # Correlation heatmap for internal/external variables
         st.subheader("Correlation Heatmap")
-        # Filter numeric columns only for correlation
         numeric_df = variable_df.select_dtypes(include=[np.number])
         correlation_matrix = numeric_df.corr()
         fig, ax = plt.subplots()
@@ -174,3 +177,5 @@ if uploaded_file is not None:
         st.download_button(label="Download CSV", data=csv, file_name='processed_data.csv', mime='text/csv')
 else:
     st.sidebar.write("Upload a CSV file to get started.")
+
+
