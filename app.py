@@ -1,31 +1,29 @@
 import streamlit as st
 import pandas as pd
 import numpy as np
-import requests
 import joblib
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns
+import plotly.express as px
 from sklearn.impute import SimpleImputer
-import plotly.express as px  # New: For interactive charts
-import time  # New: For feedback animations
 
 # Load the model
-model_path = 'best_random_forest_model.pkl'
-
-with open(model_path, 'rb') as model_file:
-    model = pickle.load(model_file)
+model_path = 'best_random_forest_model.pkl'  # Adjust this if needed
+if os.path.exists(model_path):
+    with open(model_path, 'rb') as file:
+        model = joblib.load(file)
 else:
-    st.error(f"Model file not found at {model_file}")
+    st.error(f"Model file not found at {model_path}")
     model = None
 
-# Define the feature columns expected by the model (excluding the missing ones)
+# Define the feature columns expected by the model
 training_columns = [
-    'temperature',  # 1. Current temperature
-    'humidity',  # 2. Current humidity
-    'precipIntensity',  # 3. Current precipitation intensity
-    'precipProbability',  # 4. Probability of precipitation
-    'windSpeed',  # 5. Wind speed
+    'temperature',
+    'humidity',
+    'precipIntensity',
+    'precipProbability',
+    'windSpeed',
 ]
 
 # Preprocess data
@@ -100,29 +98,29 @@ if uploaded_file is not None:
 
     # Separating appliance-related columns and internal/external variables
     appliance_columns = [
-        'Dishwasher [kW]', 'Furnace 1 [kW]', 'Furnace 2 [kW]', 'Home office [kW]', 
-        'Fridge [kW]', 'Wine cellar [kW]', 'Garage door [kW]', 'Kitchen 12 [kW]', 
-        'Kitchen 14 [kW]', 'Kitchen 38 [kW]', 'Barn [kW]', 'Well [kW]', 'Microwave [kW]', 
+        'Dishwasher [kW]', 'Furnace 1 [kW]', 'Furnace 2 [kW]', 'Home office [kW]',
+        'Fridge [kW]', 'Wine cellar [kW]', 'Garage door [kW]', 'Kitchen 12 [kW]',
+        'Kitchen 14 [kW]', 'Kitchen 38 [kW]', 'Barn [kW]', 'Well [kW]', 'Microwave [kW]',
         'Living room [kW]', 'Solar [kW]'
     ]
 
     variable_columns = [
-        'temperature', 'humidity', 'precipIntensity', 'precipProbability', 'windSpeed', 
-        'pressure', 'visibility', 'apparentTemperature', 'cloudCover', 'windBearing', 
+        'temperature', 'humidity', 'precipIntensity', 'precipProbability', 'windSpeed',
+        'pressure', 'visibility', 'apparentTemperature', 'cloudCover', 'windBearing',
         'dewPoint', 'precipProbability'
     ]
-    
+
     # Tab 1: Data Insights
     with tab1:
         st.subheader("Electric Appliances")
         appliance_df = sensor_df[appliance_columns]
         st.dataframe(appliance_df.describe().transpose())
-        
+
         # Handle low mean values by filtering zeros
         non_zero_appliance_df = appliance_df[(appliance_df > 0).any(axis=1)]
         st.subheader("Non-Zero Appliance Usage Statistics")
         st.dataframe(non_zero_appliance_df.describe().transpose())
-        
+
         st.subheader("Internal/External Variables")
         variable_df = sensor_df[variable_columns].drop_duplicates()  # Remove duplicates
         st.dataframe(variable_df.describe().transpose())
@@ -145,7 +143,7 @@ if uploaded_file is not None:
                             else:
                                 st.write("No immediate maintenance is required.")
                     st.success('Prediction complete!')
-                
+
                 # Outlier detection
                 st.subheader("Outlier Detection")
                 outliers = detect_outliers(sensor_df[training_columns])
@@ -160,7 +158,7 @@ if uploaded_file is not None:
     # Tab 3: Trends and Insights
     with tab3:
         st.subheader("Sensor Data Trends")
-        fig = px.line(sensor_df, x=sensor_df.index, y='temperature', title='Temperature Over Time')  
+        fig = px.line(sensor_df, x=sensor_df.index, y='temperature', title='Temperature Over Time')
         st.plotly_chart(fig)
 
         # Correlation heatmap for internal/external variables
