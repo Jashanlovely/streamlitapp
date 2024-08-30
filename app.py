@@ -9,16 +9,14 @@ from sklearn.impute import SimpleImputer
 import plotly.express as px
 import time
 
-# Load the model
-model_path = 'C:\\Users\\hp\\OneDrive\\Desktop\\ml_webapp\\streamlitapp\\ml-webapp'
-model_file = os.path.join(model_path, 'best_random_forest_model.pkl')
-if os.path.exists(model_file):
-    with open(model_file, 'rb') as file:
+model_path = 'best_random_forest_model.pkl'  # Adjust this if needed
+if os.path.exists(model_path):
+    with open(model_path, 'rb') as file:
         model = joblib.load(file)
 else:
-    st.error(f"Model file not found at {model_file}")
+    st.error(f"Model file not found at {model_path}")
     model = None
-
+    
 # Define the feature columns expected by the model
 training_columns = [
     'temperature',  # 1. Current temperature
