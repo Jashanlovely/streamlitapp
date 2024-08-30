@@ -9,7 +9,6 @@ from sklearn.impute import SimpleImputer
 import plotly.express as px
 
 # Load the model
-model_path = 'C:\\Users\\hp\\OneDrive\\Desktop\\ml_webapp\\streamlitapp\\ml-webapp'
 model_file = os.path.join(model_path, 'best_random_forest_model.pkl')
 
 # Load the model if it exists
