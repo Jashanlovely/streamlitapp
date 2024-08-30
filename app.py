@@ -12,12 +12,15 @@ import plotly.express as px
 model_file = os.path.join(model_path, 'best_random_forest_model.pkl')
 
 # Load the model if it exists
-model = None
+model_file = 'best_random_forest_model.pkl'
+
+# Check if the model file exists and load it
 if os.path.exists(model_file):
     with open(model_file, 'rb') as file:
         model = joblib.load(file)
 else:
     st.error(f"Model file not found at {model_file}")
+    model = None
 
 # Define the expected feature columns (those used in training)
 training_columns = [
