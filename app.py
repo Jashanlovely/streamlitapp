@@ -5,7 +5,7 @@ import joblib
 import os
 import matplotlib.pyplot as plt
 import seaborn as sns
-from sklearn.impute import SimpleImputer                            
+from sklearn.impute import SimpleImputer
 import plotly.express as px
 import time
 
@@ -16,7 +16,7 @@ if os.path.exists(model_path):
 else:
     st.error(f"Model file not found at {model_path}")
     model = None
-    
+
 # Define the feature columns expected by the model
 training_columns = [
     'temperature',  # 1. Current temperature
@@ -84,12 +84,12 @@ def log_data_issues(df, training_columns):
 st.set_page_config(page_title="Predictive Maintenance System", layout="wide")
 
 # Sidebar for navigation and input
-st.sidebar.title("Control Panel")
+st.sidebar.title("Predictive Maintenance System")
 
 # File uploader in sidebar
 uploaded_file = st.sidebar.file_uploader("Upload CSV", type="csv")
 
-# User input sliders in sidebar
+# User input sliders in sidebar (will only affect Data Insights and Predictions)
 temperature_input = st.sidebar.slider("Select Temperature", min_value=-10.0, max_value=50.0, value=20.0)
 humidity_input = st.sidebar.slider("Select Humidity", min_value=0.0, max_value=100.0, value=50.0)
 
@@ -103,13 +103,6 @@ if uploaded_file is not None:
         if sensor_df.empty:
             st.error("Uploaded file is empty.")
         else:
-            # Update temperature and humidity columns using slider inputs
-            sensor_df['temperature'] = temperature_input
-            sensor_df['humidity'] = humidity_input
-
-            # Log data issues
-            log_data_issues(sensor_df, training_columns)
-
             # Define columns for analysis
             appliance_columns = [
                 'Dishwasher [kW]', 'Furnace 1 [kW]', 'Furnace 2 [kW]', 'Home office [kW]', 
@@ -127,8 +120,14 @@ if uploaded_file is not None:
             # Tab 1: Data Insights
             with tab1:
                 st.subheader("Electric Appliances")
+
+                # Apply slider values for Data Insights
+                sensor_df_insights = sensor_df.copy()
+                sensor_df_insights['temperature'] = temperature_input
+                sensor_df_insights['humidity'] = humidity_input
+
                 if all(col in sensor_df.columns for col in appliance_columns):
-                    appliance_df = sensor_df[appliance_columns]
+                    appliance_df = sensor_df_insights[appliance_columns]
                     st.dataframe(appliance_df.describe().transpose())
                     
                     # Handle low mean values by filtering zeros
@@ -140,7 +139,7 @@ if uploaded_file is not None:
 
                 st.subheader("Internal/External Variables")
                 if all(col in sensor_df.columns for col in variable_columns):
-                    variable_df = sensor_df[variable_columns].drop_duplicates()  # Remove duplicates
+                    variable_df = sensor_df_insights[variable_columns].drop_duplicates()  # Remove duplicates
                     st.dataframe(variable_df.describe().transpose())
                 else:
                     st.error("Data does not contain required variable columns.")
@@ -149,8 +148,13 @@ if uploaded_file is not None:
             with tab2:
                 st.subheader("Failure Predictions")
 
-                if set(training_columns).issubset(sensor_df.columns):
-                    processed_data = preprocess_data(sensor_df, training_columns)
+                # Apply slider values for Predictions
+                sensor_df_pred = sensor_df.copy()
+                sensor_df_pred['temperature'] = temperature_input
+                sensor_df_pred['humidity'] = humidity_input
+
+                if set(training_columns).issubset(sensor_df_pred.columns):
+                    processed_data = preprocess_data(sensor_df_pred, training_columns)
 
                     if processed_data is not None:
                         if st.sidebar.button("Predict Failure"):
@@ -166,7 +170,7 @@ if uploaded_file is not None:
 
                         # Outlier detection
                         st.subheader("Outlier Detection")
-                        outliers = detect_outliers(sensor_df[training_columns])
+                        outliers = detect_outliers(sensor_df_pred[training_columns])
                         if not outliers.empty:
                             st.write("Outliers detected in the dataset:")
                             st.dataframe(outliers)
@@ -178,11 +182,52 @@ if uploaded_file is not None:
             # Tab 3: Trends and Insights
             with tab3:
                 st.subheader("Sensor Data Trends")
-                if 'temperature' in sensor_df.columns:
-                    fig = px.line(sensor_df, x=sensor_df.index, y='temperature', title='Temperature Over Time')  
+
+                # Use the actual dataset values for Trends (no slider input)
+                if 'time' in sensor_df.columns:
+                    sensor_df['time'] = pd.to_datetime(sensor_df['time'], errors='coerce')
+                    sensor_df = sensor_df.dropna(subset=['time'])  # Remove rows with invalid time values
+                    
+                    # Drop rows with NaN in 'temperature' column to ensure valid plotting
+                    sensor_df = sensor_df.dropna(subset=['temperature'])
+                    
+                    # Plot temperature trends over time using the actual dataset values
+                    fig = px.line(sensor_df, x='time', y='temperature', title='Temperature Over Time')
                     st.plotly_chart(fig)
                 else:
-                    st.error("Temperature data is missing for trend analysis.")
+                    st.error("Time data is missing for trend analysis.")
+
+                    st.subheader("Humidity Over Time")
+                if 'humidity' in sensor_df.columns:
+                  fig = px.line(sensor_df, x='time', y='humidity', title='Humidity Over Time')
+                  st.plotly_chart(fig)
+                else:
+                    st.error("Humidity data is missing for trend analysis.")
+
+                    st.subheader("Precipitation Intensity Over Time")
+                if 'precipIntensity' in sensor_df.columns:
+                  fig = px.line(sensor_df, x='time', y='precipIntensity', title='Precipitation Intensity Over Time')
+                  st.plotly_chart(fig)
+                else:
+                  st.error("Precipitation intensity data is missing for trend analysis.")
+
+                  st.subheader("Distribution of Key Variables")
+                if set(variable_columns).issubset(sensor_df.columns):
+                 fig = px.histogram(sensor_df, x='temperature', title='Temperature Distribution', nbins=50)
+                 st.plotly_chart(fig)
+     
+                 fig = px.histogram(sensor_df, x='humidity', title='Humidity Distribution', nbins=50)
+                 st.plotly_chart(fig)
+                else:
+                 st.error("Key variable data is missing.")
+
+                 st.subheader("Wind Speed Over Time")
+                if 'windSpeed' in sensor_df.columns:
+                 fig = px.line(sensor_df, x='time', y='windSpeed', title='Wind Speed Over Time')
+                 st.plotly_chart(fig)
+                else:
+                 st.error("Wind speed data is missing for trend analysis.")
+
 
                 # Correlation heatmap for internal/external variables
                 st.subheader("Correlation Heatmap")
